@@ -1,0 +1,22 @@
+CREATE TABLE Customer_Transaction_History (
+    TransactionID INT PRIMARY KEY,
+    CustomerID INT,
+    AccountID INT,
+    TransactionDate DATE,
+    TransactionType VARCHAR(50),
+    TransactionAmount DECIMAL(15, 2),
+    TransactionCurrency VARCHAR(3),
+    TransactionStatus VARCHAR(20),
+    MerchantName VARCHAR(100),
+    MerchantCategory VARCHAR(50),
+    ReferenceNumber VARCHAR(50),
+    TransactionMode VARCHAR(50),
+    TransactionDescription VARCHAR(255),
+    FeeAmount DECIMAL(10, 2),
+    TaxAmount DECIMAL(10, 2),
+    BalanceAfterTransaction DECIMAL(15, 2),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer_Master(CustomerID),
+    FOREIGN KEY (AccountID) REFERENCES Account_Master(AccountID)
+);

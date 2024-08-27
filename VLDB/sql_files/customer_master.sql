@@ -1,0 +1,23 @@
+CREATE TABLE Customer_Master (
+    CustomerID INT PRIMARY KEY,
+    CustomerName VARCHAR(100),
+    AccountNumber VARCHAR(20) UNIQUE,
+    AccountType VARCHAR(20),
+    Address VARCHAR(255),
+    ContactNumber VARCHAR(20),
+    Email VARCHAR(100),
+    DateOfBirth DATE,
+    CustomerSince DATE,
+    Status VARCHAR(20),
+    NationalID VARCHAR(20),
+    TaxID VARCHAR(20),
+    EmploymentStatus VARCHAR(50),
+    AnnualIncome DECIMAL(15, 2),
+    RiskProfile VARCHAR(50),
+    MaritalStatus VARCHAR(20),
+    NumberOfDependents INT,
+    PreferredLanguage VARCHAR(20),
+    PreferredCommunicationChannel VARCHAR(50),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

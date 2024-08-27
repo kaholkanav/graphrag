@@ -1,0 +1,28 @@
+CREATE TABLE Forex_Transactions (
+    ForexTransactionID INT PRIMARY KEY,
+    CustomerID INT,
+    AccountID INT,
+    TransactionDate DATE,
+    TransactionAmount DECIMAL(15, 2),
+    BaseCurrency VARCHAR(3),
+    TargetCurrency VARCHAR(3),
+    ExchangeRate DECIMAL(10, 6),
+    ConvertedAmount DECIMAL(15, 2),
+    BeneficiaryName VARCHAR(100),
+    BeneficiaryAccountNumber VARCHAR(20),
+    BeneficiaryBankName VARCHAR(100),
+    BeneficiaryBankSWIFT VARCHAR(20),
+    TransactionReferenceNumber VARCHAR(50),
+    TransactionStatus VARCHAR(50), -- e.g., Completed, Pending, Failed
+    SettlementDate DATE,
+    RiskAssessmentScore INT,
+    TransactionFees DECIMAL(10, 2),
+    RegulatoryCompliance VARCHAR(50),
+    TransactionNotes TEXT,
+    TransactionID INT,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer_Master(CustomerID),
+    FOREIGN KEY (AccountID) REFERENCES Account_Master(AccountID),
+    FOREIGN KEY (TransactionID) REFERENCES Transaction_Master(TransactionID)
+);

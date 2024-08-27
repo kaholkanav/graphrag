@@ -1,0 +1,26 @@
+CREATE TABLE Credit_Score_Reports (
+    CreditReportID INT PRIMARY KEY,
+    CustomerID INT,
+    ReportDate DATE,
+    CreditScore INT,
+    CreditBureau VARCHAR(100),
+    CreditRating VARCHAR(50), -- e.g., Excellent, Good, Fair, Poor
+    ReportSummary TEXT,
+    TotalDebt DECIMAL(15, 2),
+    PaymentHistoryScore INT,
+    DebtToIncomeRatio DECIMAL(5, 2),
+    NumberOfOpenAccounts INT,
+    NumberOfClosedAccounts INT,
+    CreditUtilizationRate DECIMAL(5, 2),
+    DerogatoryMarks INT,
+    RecentInquiries INT,
+    PublicRecords INT,
+    AccountAgeInMonths INT,
+    LoanRepaymentHistory VARCHAR(255),
+    OverdraftHistory VARCHAR(255),
+    CreditCardUsageHistory VARCHAR(255),
+    Notes TEXT,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer_Master(CustomerID)
+);

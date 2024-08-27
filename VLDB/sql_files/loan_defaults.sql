@@ -1,0 +1,25 @@
+CREATE TABLE Loan_Defaults (
+    DefaultID INT PRIMARY KEY,
+    LoanAccountID INT,
+    DefaultDate DATE,
+    OutstandingAmount DECIMAL(15, 2),
+    LastPaymentDate DATE,
+    DefaultStatus VARCHAR(50), -- e.g., Open, Resolved
+    CollectionAgency VARCHAR(100),
+    CollectionAgencyContact VARCHAR(100),
+    CollectionAttempts INT,
+    RecoveryAmount DECIMAL(15, 2),
+    RecoveryDate DATE,
+    LegalActionStatus VARCHAR(50),
+    LegalActionDetails TEXT,
+    RiskMitigationStrategy VARCHAR(255),
+    DefaultReason VARCHAR(255),
+    IsLoanRestructured BOOLEAN,
+    RestructuredTerms TEXT,
+    RestructuredAmount DECIMAL(15, 2),
+    RestructuredDate DATE,
+    Notes TEXT,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (LoanAccountID) REFERENCES Loan_Accounts(LoanAccountID)
+);

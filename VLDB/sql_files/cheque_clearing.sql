@@ -1,0 +1,25 @@
+CREATE TABLE Cheque_Clearing (
+    ChequeID INT PRIMARY KEY,
+    CustomerID INT,
+    AccountID INT,
+    ChequeNumber VARCHAR(20),
+    ChequeDate DATE,
+    ChequeAmount DECIMAL(15, 2),
+    ChequeCurrency VARCHAR(3),
+    PayeeName VARCHAR(100),
+    PayeeAccountNumber VARCHAR(20),
+    PayeeBankName VARCHAR(100),
+    PayeeBankBranchCode VARCHAR(10),
+    ChequeStatus VARCHAR(50), -- e.g., Cleared, Bounced, Hold
+    ClearingDate DATE,
+    ClearingReferenceNumber VARCHAR(50),
+    TransactionID INT,
+    RiskAssessmentScore INT,
+    ReasonForBouncing VARCHAR(255),
+    Notes TEXT,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (CustomerID) REFERENCES Customer_Master(CustomerID),
+    FOREIGN KEY (AccountID) REFERENCES Account_Master(AccountID),
+    FOREIGN KEY (TransactionID) REFERENCES Transaction_Master(TransactionID)
+);
