@@ -79,7 +79,7 @@ neo4j_handler.create_metadata_graph(metadata)
 # Convert natural language query to SQL
 natural_language_query = "Show me all data of the Customer_Transaction_History table"
 sql_query = text_to_sql(natural_language_query)
-print(sql_query[1:-1])  # Print the generated SQL query to verify it
+print(f" the sql query is {sql_query[1:-2]}")  # Print the generated SQL query to verify it
 
 # Execute the SQL query on SQLite
 result = execute_sql_on_sqlite(db_path, sql_query)
