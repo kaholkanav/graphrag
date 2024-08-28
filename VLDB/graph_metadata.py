@@ -2,6 +2,7 @@ from neo4j import GraphDatabase
 import sqlite3
 from dotenv import load_dotenv
 import os
+from impala.dbapi import connect
 
 class GraphDatabaseHandler:
     def __init__(self, uri, user, password):
@@ -9,6 +10,41 @@ class GraphDatabaseHandler:
 
     def close(self):
         self.driver.close()
+    
+    def extract_impala_metadata(self, host, port, database_name):
+        """
+        Extract metadata from an Impala database. Olympus supports Impala databases.
+
+        :param host: The host of the Impala server.
+        :param port: The port of the Impala server.
+        :param database_name: The name of the database to extract metadata from.
+        :return: A dictionary containing tables and columns metadata.
+        """
+        # Establish a connection to Impala database
+        conn = connect(host=host, port=port)
+
+        # Create a cursor object
+        cursor = conn.cursor()
+
+        # Query to get all tables in the specified database
+        cursor.execute(f"SHOW TABLES IN {database_name}")
+        tables = cursor.fetchall()
+
+        metadata = {}
+
+        # Iterate over each table to get its columns
+        for table in tables:
+            table_name = table[0]
+            cursor.execute(f"SHOW COLUMN STATS {database_name}.{table_name}")
+            columns = cursor.fetchall()
+            metadata[table_name] = columns
+
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+
+        # Return the metadata as a dictionary
+        return metadata
 
     def create_metadata_graph(self, metadata):
         with self.driver.session() as session:

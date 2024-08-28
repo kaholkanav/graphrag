@@ -1,10 +1,24 @@
 import sqlite3
+import logging
 from neo4j import GraphDatabase
 import ollama
 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    handlers=[
+                        logging.FileHandler("app.log"),
+                        logging.StreamHandler()
+                    ])
 class GraphDatabaseHandler:
     def __init__(self, uri, user, password):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    handlers=[
+                        logging.FileHandler("app.log"),
+                        logging.StreamHandler()
+                    ])
 
     def close(self):
         self.driver.close()
@@ -12,10 +26,10 @@ class GraphDatabaseHandler:
     def create_metadata_graph(self, metadata):
         with self.driver.session() as session:
             for table, columns in metadata.items():
-                print(f"Creating node for table: {table}")
+                self.logger.debug(f"Creating node for table: {table}")
                 session.run("CREATE (t:Table {name: $table_name})", table_name=table)
                 for column, column_type in columns.items():
-                    print(f"Creating node for column: {column} of type {column_type} in table {table}")
+                    self.logger.debug(f"Creating node for column: {column} of type {column_type} in table {table}")
                     session.run("""
                         MATCH (t:Table {name: $table_name})
                         CREATE (t)-[:HAS_COLUMN]->(c:Column {name: $column_name, type: $column_type})
@@ -40,14 +54,21 @@ def extract_metadata(db_path):
     conn.close()
     return metadata
 
+logger = logging.getLogger(__name__)
 def text_to_sql(natural_language_query):
+    
     model_name = "llama2"  # Example model name, replace with the actual model name you are using
     prompt = f"Generate only the SQL query for the following request: {natural_language_query}. The output must be only the SQL query without any additional text, explanations, or formatting. Put the query inside curly braces {{}}. The query should be compatible with SQLite. SQLite uses the PRAGMA table_info command to get column information, so use that if relevant."
     response = ollama.generate(model=model_name, prompt=prompt)
-    print(f"Response from model: {response}")  # Debugging line to inspect the response
+    logger.debug(f"Response from model: {response}")  # Debugging line to inspect the response
     sql_query = response['response'].replace('```', '').strip()
-    print(f"Generated SQL query: {sql_query}")
-    return sql_query
+    logger.debug(f"Generated SQL query: {sql_query}")
+    if '{' in sql_query:
+        #remove the curly braces from the response
+        sql_query = sql_query[1:]
+    if '}' in sql_query:
+        sql_query = sql_query[:-1]
+    return sql_query  # Remove the curly braces from the response
 
 def execute_sql_on_sqlite(db_path, sql_query):
     conn = sqlite3.connect(db_path)
@@ -79,11 +100,11 @@ neo4j_handler.create_metadata_graph(metadata)
 # Convert natural language query to SQL
 natural_language_query = "Show me all data of the Customer_Transaction_History table"
 sql_query = text_to_sql(natural_language_query)
-print(f" the sql query is {sql_query[1:-2]}")  # Print the generated SQL query to verify it
+logger.debug(f" the sql query is {sql_query[1:-2]}")  # Print the generated SQL query to verify it
 
 # Execute the SQL query on SQLite
 result = execute_sql_on_sqlite(db_path, sql_query)
-print(result)
+logger.debug(result)
 
 #iterative query
 
