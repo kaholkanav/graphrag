@@ -1,5 +1,7 @@
 from neo4j import GraphDatabase
 import sqlite3
+from dotenv import load_dotenv
+import os
 
 class GraphDatabaseHandler:
     def __init__(self, uri, user, password):
@@ -58,8 +60,10 @@ def query_columns_of_table(neo4j_handler, table_name):
 # Usage
 db_path = 'banking_system.db'
 metadata = extract_metadata(db_path)
-
-neo4j_handler = GraphDatabaseHandler("bolt://localhost:7687", "neo4j", "password")
+uri=os.getenv('NEO4J_URI')
+user=os.getenv('NEO4J_USER')
+password=os.getenv('NEO4J_PASSWORD')
+neo4j_handler = GraphDatabaseHandler(uri, user, password)
 neo4j_handler.create_metadata_graph(metadata)
 
 # Query columns of a specific table
