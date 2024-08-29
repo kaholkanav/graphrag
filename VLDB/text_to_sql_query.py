@@ -1,7 +1,11 @@
 import sqlite3
 import logging
+from dotenv import load_dotenv
 from neo4j import GraphDatabase
 import ollama
+import os
+import networkx as nx
+import matplotlib.pyplot as plt
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -23,22 +27,77 @@ class GraphDatabaseHandler:
     def close(self):
         self.driver.close()
 
+    # def create_metadata_graph(self, metadata):
+    #     with self.driver.session() as session:
+    #         for table, columns in metadata.items():
+    #             self.logger.debug(f"Creating node for table: {table}")
+    #             session.run("CREATE (t:Table {name: $table_name})", table_name=table)
+    #             for column, column_type in columns.items():
+    #                 self.logger.debug(f"Creating node for column: {column} of type {column_type} in table {table}")
+    #                 session.run("""
+    #                     MATCH (t:Table {name: $table_name})
+    #                     CREATE (t)-[:HAS_COLUMN]->(c:Column {name: $column_name, type: $column_type})
+    #                 """, table_name=table, column_name=column, column_type=column_type)
+
     def create_metadata_graph(self, metadata):
         with self.driver.session() as session:
-            for table, columns in metadata.items():
+            column_map = {}
+            
+            # Limit to 5 tables
+            limited_metadata = dict(list(metadata.items())[:5])
+            
+            for table, columns in limited_metadata.items():
                 self.logger.debug(f"Creating node for table: {table}")
                 session.run("CREATE (t:Table {name: $table_name})", table_name=table)
-                for column, column_type in columns.items():
+                
+                # Limit to 10 columns per table
+                limited_columns = dict(list(columns.items())[:10])
+                
+                for column, column_type in limited_columns.items():
                     self.logger.debug(f"Creating node for column: {column} of type {column_type} in table {table}")
                     session.run("""
                         MATCH (t:Table {name: $table_name})
                         CREATE (t)-[:HAS_COLUMN]->(c:Column {name: $column_name, type: $column_type})
                     """, table_name=table, column_name=column, column_type=column_type)
+                    
+                    # Store the column in the map to check for repetition or keys
+                    if column not in column_map:
+                        column_map[column] = [(table, column_type)]
+                    else:
+                        # If the column is repeated, create a relationship between the columns
+                        for existing_table, existing_type in column_map[column]:
+                            self.logger.debug(f"Creating relationship between {existing_table}.{column} and {table}.{column}")
+                            session.run("""
+                                MATCH (c1:Column {name: $column_name, type: $column_type}), 
+                                    (c2:Column {name: $column_name, type: $existing_type})
+                                WHERE c1 <> c2
+                                CREATE (c1)-[:KEY_RELATION]->(c2)
+                            """, column_name=column, column_type=column_type, existing_type=existing_type)
+                        
+                        column_map[column].append((table, column_type))
 
     def execute_query(self, query):
         with self.driver.session() as session:
             result = session.run(query)
             return [record for record in result]
+    
+    def get_transactions(self):
+        with self.driver.session() as session:
+            result = session.read_transaction(self._get_and_return_transactions)
+            return result
+
+    @staticmethod
+    def _get_and_return_transactions(tx):
+        query = (
+            "MATCH (c:Customer)-[:MADE]->(t:Transaction)<-[:INVOLVED_IN]-(a:Account) "
+            "RETURN c.CustomerID AS customer_id, t.TransactionID AS transaction_id, "
+            "a.AccountID AS account_id, t.TransactionDate AS transaction_date, "
+            "t.TransactionType AS transaction_type, t.TransactionAmount AS transaction_amount"
+        )
+        result = tx.run(query)
+        return [(record["customer_id"], record["transaction_id"], record["account_id"],
+                 record["transaction_date"], record["transaction_type"], record["transaction_amount"])
+                for record in result]
 
 def extract_metadata(db_path):
     conn = sqlite3.connect(db_path)
@@ -90,11 +149,37 @@ def execute_sql_on_sqlite(db_path, sql_query):
         conn.close()
         return result
 
+def visualize_graph(transactions):
+    G = nx.Graph()
+
+    for transaction in transactions:
+        customer_id, transaction_id, account_id, transaction_date, transaction_type, transaction_amount = transaction
+        G.add_node(customer_id, label='Customer')
+        G.add_node(transaction_id, label='Transaction', date=transaction_date, type=transaction_type, amount=transaction_amount)
+        G.add_node(account_id, label='Account')
+        G.add_edge(customer_id, transaction_id, relationship='MADE')
+        G.add_edge(account_id, transaction_id, relationship='INVOLVED_IN')
+
+    pos = nx.spring_layout(G)
+    labels = nx.get_node_attributes(G, 'label')
+    nx.draw(G, pos, with_labels=True, labels=labels, node_size=3000, node_color='lightblue', font_size=10, font_weight='bold')
+    edge_labels = nx.get_edge_attributes(G, 'relationship')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    plt.show()
+
+
 # Usage
 db_path = 'banking_system.db'
 metadata = extract_metadata(db_path)
 
-neo4j_handler = GraphDatabaseHandler("bolt://localhost:7687", "neo4j", "password")
+#load env
+load_dotenv()
+uri=os.getenv('NEO4J_URI')
+user=os.getenv('NEO4J_USER')
+password=os.getenv('NEO4J_PASSWORD')
+logger.debug(f"uri: {uri} user: {user} password: {password}")
+
+neo4j_handler = GraphDatabaseHandler(uri, user, password)
 neo4j_handler.create_metadata_graph(metadata)
 
 # Convert natural language query to SQL
@@ -110,3 +195,15 @@ logger.debug(result)
 
 # Close the Neo4j handler
 neo4j_handler.close()
+
+#visualizing the graph
+load_dotenv()
+uri=os.getenv('NEO4J_URI')
+user=os.getenv('NEO4J_USER')
+password=os.getenv('NEO4J_PASSWORD')
+logging.debug(f"Connecting to Neo4j database at {uri} with user {user}")
+graph_db_handler = GraphDatabaseHandler(uri, user, password)
+transactions = graph_db_handler.get_transactions()
+graph_db_handler.close()
+
+visualize_graph(transactions)
